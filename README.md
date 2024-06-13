@@ -1,4 +1,4 @@
-# Mini Projector Android Application
+# Mini Project Android Application
 **Notes** is an Android mini project that I created, this application is useful for storing, deleting and updating notes created by users, this application has implemented the MVVM architectural pattern
 
 # Preview
