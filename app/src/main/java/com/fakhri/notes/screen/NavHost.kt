@@ -65,15 +65,21 @@ fun NavHostApp(
         else -> NotesScreen.DetailNotes
     }
     val canBack = navController.previousBackStackEntry != null
-    var isUpdate by remember { mutableStateOf(false) }
+
     Scaffold(topBar = {
         NotesAppBar(
             factory,
             canNavigateBack = canBack,
             navigateAdd = { navController.navigate(NotesScreen.AddNotes.name) },
             navigateBack = {
-                navController.navigateUp()
-                isUpdate = !isUpdate
+                if(notesViewModel.isUpdate.value){
+                    navController.navigateUp()
+                    notesViewModel.toggleUpdate()
+                    notesViewModel.navBack()
+                }else{
+                    navController.navigateUp()
+                    notesViewModel.navBack()
+                }
             },
             notesViewModel = notesViewModel,
             currentScreen = currentScreen,
@@ -81,13 +87,12 @@ fun NavHostApp(
                 notesViewModel.addNotes(title, body, isfav)
                 navController.navigateUp()
             },
-            isUpdate = isUpdate,
             updateNotes = { note ->
                 notesViewModel.updateNotes(
                     note
                 )
                 navController.navigateUp()
-                isUpdate = !isUpdate
+                notesViewModel.toggleUpdate()
             },
         )
     }) { it ->
@@ -103,7 +108,7 @@ fun NavHostApp(
                         notesViewModel.deleteNotes(it)
                     }, onDetailTask = { notes, id ->
                         navController.navigate("${NotesScreen.DetailNotes.name}/${id}")
-                        isUpdate = !isUpdate
+                        notesViewModel.toggleUpdate()
                     })
                 }
             }
@@ -141,7 +146,6 @@ fun NavHostApp(
 fun NotesAppBar(
     factory: NotesViewModelFactory,
     canNavigateBack: Boolean,
-    isUpdate: Boolean,
     currentScreen: NotesScreen,
     notesViewModel: NotesViewModel = viewModel(factory = factory),
     addNotes: (String, String, Boolean) -> Unit,
@@ -149,6 +153,7 @@ fun NotesAppBar(
     navigateBack: () -> Unit,
     updateNotes: (Notes) -> Unit
 ) {
+    val isUpdate by notesViewModel.isUpdate
     CenterAlignedTopAppBar(
         title = {
             Box(

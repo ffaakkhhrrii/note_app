@@ -55,6 +55,18 @@ class NotesViewModel(private val repository: NotesRepository) : ViewModel() {
             _note.value = repository.getNotesById(noteId)
         }
     }
+
+
+    var isUpdate = mutableStateOf(false)
+
+    fun navBack(){
+        inputTitle.value = ""
+        inputBody.value = ""
+    }
+
+    fun toggleUpdate() {
+        isUpdate.value = !isUpdate.value
+    }
 //
 //    fun onEvent(event: NotesEvent){
 //        when(event){
