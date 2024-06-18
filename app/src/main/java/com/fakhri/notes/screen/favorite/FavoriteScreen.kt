@@ -1,4 +1,4 @@
-package com.fakhri.notes.screen.home
+package com.fakhri.notes.screen.favorite
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,14 +10,15 @@ import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.fakhri.notes.data.db.Notes
+import com.fakhri.notes.screen.home.NotesList
 
 @Composable
-fun HomeScreen(
+fun FavoriteScreen(
     modifier: Modifier = Modifier,
     noteList: State<List<Notes>>,
     onDeleteTask: (Notes) -> Unit,
-    onDetailTask:(Notes,Int)-> Unit,
-    onFavoriteTask: (Int,Boolean) -> Unit
+    onDetailTask: (Notes, Int) -> Unit,
+    onFavoriteTask: (Int, Boolean) -> Unit
 ) {
     if ((noteList.value).isEmpty()) {
         Column(
@@ -25,12 +26,12 @@ fun HomeScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Tidak ada notes", style = MaterialTheme.typography.displayMedium)
+            Text(text = "Tidak ada notes favorite", style = MaterialTheme.typography.displayMedium)
         }
     }
-    NotesList(
+    NotesFavoriteList(
         noteList = noteList,
         onDeleteTask = { item -> onDeleteTask(item) },
         onDetailTask = { notes, i -> onDetailTask(notes, notes.id) },
-        onFavoriteTask = {id,isFavorite-> onFavoriteTask(id,isFavorite)})
+        onFavoriteTask = { id, isFavorite -> onFavoriteTask(id, isFavorite) })
 }

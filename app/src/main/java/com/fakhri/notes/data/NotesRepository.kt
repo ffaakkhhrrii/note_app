@@ -12,4 +12,7 @@ interface NotesRepository {
     fun getNotesById(noteId: Int):Notes?
     fun getAllNotes(): Flow<List<Notes>>
     suspend fun updateNotes(notes: Notes)
+    fun getFavoriteNotes(isFavorite: Boolean):Flow<List<Notes>>
+
+    suspend fun updateFavorite(id: Int,isFavorite: Boolean)
 }

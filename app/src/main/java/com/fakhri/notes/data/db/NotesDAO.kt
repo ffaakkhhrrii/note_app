@@ -27,4 +27,11 @@ interface NotesDAO {
 
     @Update
     suspend fun updateNote(notes: Notes)
+
+    @Query("SELECT * FROM tb_notes WHERE isFavorite = :isFavorite")
+    fun getFavoriteNotes(isFavorite: Boolean): Flow<List<Notes>>
+
+    @Query("UPDATE tb_notes SET isFavorite = :isFavorite WHERE id = :id")
+    suspend fun updateFavorite(id: Int,isFavorite: Boolean)
+
 }

@@ -15,31 +15,27 @@ import kotlinx.coroutines.launch
 
 class NotesViewModel(private val repository: NotesRepository) : ViewModel() {
 
-    private val _screenState = mutableStateOf(ScreenState())
-
-    val screenState = _screenState
-
     val inputTitle: MutableState<String> = mutableStateOf("")
     val inputBody: MutableState<String> = mutableStateOf("")
     val isFavorite = mutableStateOf(false)
 
     val noteList = repository.getAllNotes()
 
-    fun addNotes(title: String,body:String,isFavorite: Boolean){
+    fun addNotes(title: String, body: String, isFavorite: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.addNotes(Notes(0,title, body, isFavorite))
+            repository.addNotes(Notes(0, title, body, isFavorite))
             inputTitle.value = ""
             inputBody.value = ""
         }
     }
 
-    fun deleteNotes(notes: Notes){
+    fun deleteNotes(notes: Notes) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteNotes(notes)
         }
     }
 
-    fun updateNotes(notes: Notes){
+    fun updateNotes(notes: Notes) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.updateNotes(notes)
             inputTitle.value = ""
@@ -57,31 +53,16 @@ class NotesViewModel(private val repository: NotesRepository) : ViewModel() {
     }
 
 
-    var isUpdate = mutableStateOf(false)
-
-    fun navBack(){
+    fun navBack() {
         inputTitle.value = ""
         inputBody.value = ""
     }
 
-    fun toggleUpdate() {
-        isUpdate.value = !isUpdate.value
+    val notesFavoriteList = repository.getFavoriteNotes(true)
+
+    fun updateFavoriteStatus(noteId: Int,isFavorite: Boolean){
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.updateFavorite(noteId,isFavorite)
+        }
     }
-//
-//    fun onEvent(event: NotesEvent){
-//        when(event){
-//            is NotesEvent.ValueEntered->{
-//                _screenState.value = _screenState.value.copy(
-//                    addButtonIconShow = true,
-//                    event.input
-//                )
-//            }
-//            is NotesEvent.AddButtonClicked->{
-//                addNotes(inputTitle.value,inputBody.value,isFavorite.value)
-//                _screenState.value = _screenState.value.copy(
-//                    addButtonIconShow = false,
-//                )
-//            }
-//        }
-//    }
 }

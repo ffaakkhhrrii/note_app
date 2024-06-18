@@ -19,6 +19,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavHostController
 import com.fakhri.notes.screen.BaseScreen
 import com.fakhri.notes.screen.notes.AddNotes
 import com.fakhri.notes.ui.theme.NotesTheme

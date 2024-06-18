@@ -1,4 +1,4 @@
-package com.fakhri.notes.screen.home
+package com.fakhri.notes.screen.favorite
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +32,7 @@ import com.fakhri.notes.data.db.Notes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotesItem(
+fun NotesFavoriteItem(
     notes: Notes,
     onDelete: (Notes) -> Unit,
     onDetail: (Notes, Int) -> Unit,

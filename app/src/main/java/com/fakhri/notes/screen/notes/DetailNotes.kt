@@ -45,6 +45,7 @@ fun DetailNotes(
         LaunchedEffect(notee) {
             notesViewModel.inputTitle.value = notee.title
             notesViewModel.inputBody.value = notee.body
+            notesViewModel.isFavorite.value = notee.isFavorite
         }
 
         Column(modifier = modifier.padding(dimensionResource(R.dimen.medium))) {

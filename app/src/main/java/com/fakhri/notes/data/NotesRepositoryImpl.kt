@@ -28,4 +28,13 @@ class NotesRepositoryImpl(private val dao: NotesDAO) : NotesRepository {
     override suspend fun updateNotes(notes: Notes) {
         dao.updateNote(notes)
     }
+
+    override fun getFavoriteNotes(isFavorite: Boolean): Flow<List<Notes>> {
+        return dao.getFavoriteNotes(isFavorite)
+    }
+
+    override suspend fun updateFavorite(id: Int, isFavorite: Boolean) {
+        dao.updateFavorite(id,isFavorite)
+    }
+
 }

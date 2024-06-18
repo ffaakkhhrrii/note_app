@@ -1,6 +1,8 @@
 package com.fakhri.notes.screen
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,6 +42,7 @@ import com.fakhri.notes.NotesViewModel
 import com.fakhri.notes.NotesViewModelFactory
 import com.fakhri.notes.R
 import com.fakhri.notes.data.db.Notes
+import com.fakhri.notes.screen.favorite.FavoriteScreen
 import com.fakhri.notes.screen.home.HomeScreen
 import com.fakhri.notes.screen.notes.AddNotes
 import com.fakhri.notes.screen.notes.DetailNotes
@@ -47,7 +50,8 @@ import com.fakhri.notes.screen.notes.DetailNotes
 enum class NotesScreen(val title: String) {
     Home("Home"),
     AddNotes("Notes"),
-    DetailNotes("Detail")
+    DetailNotes("Detail"),
+    Favorite("Favorite")
 }
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -62,59 +66,56 @@ fun NavHostApp(
     val currentScreen = when (route) {
         NotesScreen.Home.name -> NotesScreen.Home
         NotesScreen.AddNotes.name -> NotesScreen.AddNotes
+        NotesScreen.Favorite.name -> NotesScreen.Favorite
         else -> NotesScreen.DetailNotes
     }
-    val canBack = navController.previousBackStackEntry != null
 
-    Scaffold(topBar = {
-        NotesAppBar(
-            factory,
-            canNavigateBack = canBack,
-            navigateAdd = { navController.navigate(NotesScreen.AddNotes.name) },
-            navigateBack = {
-                if(notesViewModel.isUpdate.value){
-                    navController.navigateUp()
-                    notesViewModel.toggleUpdate()
-                    notesViewModel.navBack()
-                }else{
-                    navController.navigateUp()
-                    notesViewModel.navBack()
-                }
-            },
-            notesViewModel = notesViewModel,
-            currentScreen = currentScreen,
-            addNotes = { title, body, isfav ->
-                notesViewModel.addNotes(title, body, isfav)
-                navController.navigateUp()
-            },
-            updateNotes = { note ->
-                notesViewModel.updateNotes(
-                    note
-                )
-                navController.navigateUp()
-                notesViewModel.toggleUpdate()
-            },
-        )
-    }) { it ->
+    val canBack = navController.previousBackStackEntry != null
+    val bottomBarHeight = 56.dp
+
+    Scaffold(bottomBar = {
+        if (currentScreen != NotesScreen.AddNotes && currentScreen != NotesScreen.DetailNotes) {
+            BottomBar(navController = navController)
+        }
+    }) {
         NavHost(
             navController = navController,
             startDestination = NotesScreen.Home.name,
-            modifier = Modifier.padding(it)
         ) {
             composable(route = NotesScreen.Home.name) {
                 val noteList = notesViewModel.noteList.collectAsState(initial = emptyList())
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    HomeScreen(noteList = noteList, onDeleteTask = {
-                        notesViewModel.deleteNotes(it)
-                    }, onDetailTask = { notes, id ->
-                        navController.navigate("${NotesScreen.DetailNotes.name}/${id}")
-                        notesViewModel.toggleUpdate()
-                    })
+                Scaffold(topBar = {
+                    HomeBar(canBack) {
+                        navController.navigate(NotesScreen.AddNotes.name)
+                    }
+                }) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize().padding(it)
+                            .padding(bottom = bottomBarHeight)
+                    ) {
+                        HomeScreen(noteList = noteList, onDeleteTask = {
+                            notesViewModel.deleteNotes(it)
+                        }, onDetailTask = { notes, id ->
+                            navController.navigate("${NotesScreen.DetailNotes.name}/${id}")
+                        }, onFavoriteTask = { id, isFavorite ->
+                            notesViewModel.updateFavoriteStatus(id, isFavorite)
+                        })
+                    }
                 }
             }
             composable(route = NotesScreen.AddNotes.name) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    AddNotes(notesViewModel.inputTitle, notesViewModel.inputBody)
+                Scaffold(topBar = {
+                    AddTopBar(factory, canBack, notesViewModel, { title, body, isfav ->
+                        notesViewModel.addNotes(title, body, isfav)
+                        navController.navigateUp()
+                    }, navigateBack = {
+                        navController.navigateUp()
+                        notesViewModel.navBack()
+                    })
+                }) {
+                    Surface(modifier = Modifier.fillMaxSize().padding(it)) {
+                        AddNotes(notesViewModel.inputTitle, notesViewModel.inputBody)
+                    }
                 }
             }
             composable(
@@ -124,18 +125,50 @@ fun NavHostApp(
                 })
             ) { backStackEntry ->
                 val noteId = backStackEntry.arguments?.getInt("noteId") ?: 0
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    backStackEntry.arguments?.getInt("noteId")
-                        ?.let { it1 ->
-                            DetailNotes(
-                                noteId = it1,
-                                factory = factory,
-                                notesViewModel = notesViewModel
-                            )
-                        }
+                Scaffold(topBar = {
+                    DetailTopBar(factory, canBack, notesViewModel, { note ->
+                        notesViewModel.updateNotes(
+                            note
+                        )
+                        navController.navigateUp()
+                    }, navigateBack = {
+                        navController.navigateUp()
+                        notesViewModel.navBack()
+                    })
+                }) {
+                    Surface(modifier = Modifier.fillMaxSize().padding(it)) {
+                        backStackEntry.arguments?.getInt("noteId")
+                            ?.let { it1 ->
+                                DetailNotes(
+                                    noteId = it1,
+                                    factory = factory,
+                                    notesViewModel = notesViewModel
+                                )
+                            }
+                    }
                 }
             }
+            composable(route = NotesScreen.Favorite.name) {
+                Scaffold(topBar = {
+                    FavoriteBar(canBack) {
+                        navController.navigate(NotesScreen.AddNotes.name)
+                    }
+                }) {
+                    Surface(modifier = Modifier.fillMaxSize().padding(it)) {
+                        FavoriteScreen(
+                            noteList = notesViewModel.notesFavoriteList.collectAsState(initial = emptyList()),
+                            onDeleteTask = {
+                                notesViewModel.deleteNotes(it)
+                            },
+                            onDetailTask = { note, id ->
+                                navController.navigate("${NotesScreen.DetailNotes.name}/${id}")
+                            }, onFavoriteTask = { id, isFavorite ->
+                                notesViewModel.updateFavoriteStatus(id, isFavorite)
+                            })
+                    }
+                }
 
+            }
         }
     }
 
@@ -143,17 +176,10 @@ fun NavHostApp(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotesAppBar(
-    factory: NotesViewModelFactory,
+fun HomeBar(
     canNavigateBack: Boolean,
-    currentScreen: NotesScreen,
-    notesViewModel: NotesViewModel = viewModel(factory = factory),
-    addNotes: (String, String, Boolean) -> Unit,
-    navigateAdd: () -> Unit,
-    navigateBack: () -> Unit,
-    updateNotes: (Notes) -> Unit
+    navigateAdd: () -> Unit
 ) {
-    val isUpdate by notesViewModel.isUpdate
     CenterAlignedTopAppBar(
         title = {
             Box(
@@ -163,52 +189,152 @@ fun NotesAppBar(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = currentScreen.title,
+                    text = "Home",
                     style = MaterialTheme.typography.displayLarge
                 )
             }
         },
         actions = {
-            if (canNavigateBack && !isUpdate) {
-                IconButton(
-                    onClick = {
-                        if (notesViewModel.inputTitle.value.isNotEmpty() && notesViewModel.inputBody.value.isNotEmpty()) {
-                            addNotes(
+            IconButton(
+                onClick = navigateAdd,
+                modifier = Modifier.align(Alignment.CenterVertically)
+            ) {
+                Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+            }
+
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FavoriteBar(
+    canNavigateBack: Boolean,
+    navigateAdd: () -> Unit
+) {
+    CenterAlignedTopAppBar(
+        title = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Favorite",
+                    style = MaterialTheme.typography.displayLarge
+                )
+            }
+        },
+        actions = {
+            IconButton(
+                onClick = navigateAdd,
+                modifier = Modifier.align(Alignment.CenterVertically)
+            ) {
+                Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+            }
+
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddTopBar(
+    factory: NotesViewModelFactory,
+    canNavigateBack: Boolean,
+    notesViewModel: NotesViewModel = viewModel(factory = factory),
+    addNotes: (String, String, Boolean) -> Unit,
+    navigateBack: () -> Unit,
+) {
+    CenterAlignedTopAppBar(
+        title = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Notes",
+                    style = MaterialTheme.typography.displayLarge
+                )
+            }
+        },
+        actions = {
+            IconButton(
+                onClick = {
+                    if (notesViewModel.inputTitle.value.isNotEmpty() && notesViewModel.inputBody.value.isNotEmpty()) {
+                        addNotes(
+                            notesViewModel.inputTitle.value,
+                            notesViewModel.inputBody.value,
+                            false
+                        )
+                    }
+                },
+                modifier = Modifier.align(Alignment.CenterVertically)
+            ) {
+                Icon(imageVector = Icons.Filled.Done, contentDescription = null)
+            }
+
+        },
+        navigationIcon = {
+            if (canNavigateBack) {
+                IconButton(onClick = navigateBack) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DetailTopBar(
+    factory: NotesViewModelFactory,
+    canNavigateBack: Boolean,
+    notesViewModel: NotesViewModel = viewModel(factory = factory),
+    updateNotes: (Notes) -> Unit,
+    navigateBack: () -> Unit,
+) {
+    CenterAlignedTopAppBar(
+        title = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Detail",
+                    style = MaterialTheme.typography.displayLarge
+                )
+            }
+        },
+        actions = {
+            IconButton(
+                onClick = {
+                    if (notesViewModel.inputTitle.value.isNotEmpty() && notesViewModel.inputBody.value.isNotEmpty()) {
+                        updateNotes(
+                            Notes(
+                                notesViewModel.note.value!!.id,
                                 notesViewModel.inputTitle.value,
                                 notesViewModel.inputBody.value,
-                                false
+                                notesViewModel.isFavorite.value
                             )
-                        }
-                    },
-                    modifier = Modifier.align(Alignment.CenterVertically)
-                ) {
-                    Icon(imageVector = Icons.Filled.Done, contentDescription = null)
-                }
-            } else if (isUpdate && canNavigateBack) {
-                IconButton(
-                    onClick = {
-                        if (notesViewModel.inputTitle.value.isNotEmpty() && notesViewModel.inputBody.value.isNotEmpty()) {
-                            updateNotes(
-                                Notes(
-                                    notesViewModel.note.value!!.id,
-                                    notesViewModel.inputTitle.value,
-                                    notesViewModel.inputBody.value,
-                                    false
-                                )
-                            )
-                        }
-                    },
-                    modifier = Modifier.align(Alignment.CenterVertically)
-                ) {
-                    Icon(imageVector = Icons.Filled.Done, contentDescription = null)
-                }
-            } else {
-                IconButton(
-                    onClick = navigateAdd,
-                    modifier = Modifier.align(Alignment.CenterVertically)
-                ) {
-                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
-                }
+                        )
+                    }
+                },
+                modifier = Modifier.align(Alignment.CenterVertically)
+            ) {
+                Icon(imageVector = Icons.Filled.Done, contentDescription = null)
             }
         },
         navigationIcon = {
